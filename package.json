@@ -2,14 +2,14 @@
   "bin": {
     "sqltomapper": "jdeploy-bundle/jdeploy.js"
   },
-  "author": "",
-  "description": "",
+  "author": "zany",
+  "homepage": "https://github.com/muguliebe/sqltomapper",
   "main": "index.js",
   "preferGlobal": true,
   "repository": "",
   "version": "1.0.7",
   "jdeploy": {
-    "jar": "build/libs/sqlToMapper-1.0.7.jar"
+    "jar": "build/libs/sqlToMapper.jar"
   },
   "dependencies": {
     "shelljs": "^0.7.5"
