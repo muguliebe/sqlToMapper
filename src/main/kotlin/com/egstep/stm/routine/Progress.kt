@@ -30,8 +30,8 @@ class Progress : Base() {
             print("choose the number >")
 
             val input = Scanner(System.`in`)
-            val inIdx = input.nextInt()
-            val menu = Menu.all.filter { it.idx == inIdx }
+            val inIdx = input.next()
+            val menu = Menu.all.filter { it.idx == Integer.parseInt(inIdx) }
                     .firstOrNull()
             return menu
         }

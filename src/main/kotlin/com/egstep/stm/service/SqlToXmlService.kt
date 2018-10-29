@@ -37,16 +37,8 @@ object SqlToXmlService : Base() {
             println("\ntarget  directory is: ${pathTarget.toAbsolutePath()}")
         }
     private var sqlFiles: List<File> = listOf()
-        set(files) {
-            field = files
-            if (sqlFiles.isEmpty()) {
-                log.error("there is no sql files in ${pathSource.toAbsolutePath()}")
-            } else {
-                println("found ${files.size} sql files")
-            }
-        }
 
-    fun progress() {
+    fun progress(): Unit? {
 
         displayComment()
 
@@ -54,7 +46,14 @@ object SqlToXmlService : Base() {
         pathSource = getInputPathByUser()
 
         // get Files, only sql
+        println("gathering sql files...")
         sqlFiles = FileUtils.getFiles(pathSource).filter { it.extension == "sql" }
+        if (sqlFiles.isEmpty()) {
+            println("there is no sql files")
+            return null
+        } else {
+            println("found ${sqlFiles.size} sql files")
+        }
 
         // parsing sql file format
         println("\nSql Parsing Start")
@@ -65,7 +64,7 @@ object SqlToXmlService : Base() {
                 if (sql.isValid) {
                     sqls.add(sql)
                 }
-            }catch (e : KlaxonException) {
+            } catch (e: KlaxonException) {
                 println("Parsing Error: ${e.message} in ${file}")
             }
 
@@ -81,12 +80,13 @@ object SqlToXmlService : Base() {
         }
 
         println("write in $pathTarget")
+        return null
     }
 
     private fun displayComment() {
         Progress.displayStartLine()
-        println("Enter the Path where in sql files" +
-                "ex) /tmp/working/sql or just enter for ${FileSystems.getDefault().getPath(".").toAbsolutePath()}")
+        println("Enter the Path where in sql files")
+        println("ex) /tmp/working/sql or just enter for ${FileSystems.getDefault().getPath(".").toAbsolutePath()}")
         print(">")
     }
 
