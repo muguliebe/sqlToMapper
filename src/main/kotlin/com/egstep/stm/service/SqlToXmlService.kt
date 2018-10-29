@@ -86,7 +86,7 @@ object SqlToXmlService : Base() {
     private fun displayComment() {
         Progress.displayStartLine()
         println("Enter the Path where in sql files")
-        println("ex) /tmp/working/sql or just enter for ${FileSystems.getDefault().getPath(".").toAbsolutePath()}")
+        println("ex) /tmp/working/sql or just enter for ${FileSystems.getDefault().getPath("").toAbsolutePath()}")
         print(">")
     }
 
@@ -95,8 +95,13 @@ object SqlToXmlService : Base() {
             Paths.get("src/test/resources/sqlFiles")
         } else {
             val input = Scanner(System.`in`)
-            val inPath = input.nextLine()
-            Paths.get(inPath)   // FIXME | make acceptable relative path | ref | FileSystems.getDefault().getPath(".", name)
+            var inPath = input.nextLine()
+
+            return if (inPath.isEmpty()) {
+                Paths.get(FileSystems.getDefault().getPath("").toString())
+            } else {
+                Paths.get(inPath)
+            }
         }
     }
 
