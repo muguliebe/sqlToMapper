@@ -3,11 +3,11 @@
     "sqltomapper": "jdeploy-bundle/jdeploy.js"
   },
   "author": "zany",
-  "homepage": "https://github.com/muguliebe/sqltomapper",
+  "homepage": "https://github.com/muguliebe/sqltomapper#readme",
   "main": "index.js",
   "preferGlobal": true,
   "repository": "",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "jdeploy": {
     "jar": "build/libs/sqlToMapper.jar"
   },
