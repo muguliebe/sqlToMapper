@@ -17,11 +17,11 @@ fun main(args: Array<String>) {
     while (true) {
         val menuKey = Progress.displayMainMenu()
 
-        Base.commons.runMode = RunMode.DEBUG
+//        Base.commons.runMode = RunMode.DEBUG
 
         when (menuKey) {
             Menu.sqlToXml -> SqlToXmlService.progress()
-            Menu.xmlToSql -> XmlToSqlService.progress()
+//            Menu.xmlToSql -> XmlToSqlService.progress()
             Menu.exit     -> exitProcess(0)
             else          -> println("there is no matched menu")
         }

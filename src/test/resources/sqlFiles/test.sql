@@ -10,3 +10,5 @@
 */
 select 1 
   from dual
+ where 1=1
+   and 2=2

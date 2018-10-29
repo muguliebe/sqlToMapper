@@ -16,11 +16,12 @@ data class Sql(
         var namespace: String = "",
         var queryType: String = "",
         var id: String = "",
-        var parameterType: String?,
-        var resultType: String?,
         var query: String = "",
         var sqlFileName: String = ""
 ) {
+    var parameterType: String? = null
+    var resultType: String? = null
+
     var isValid: Boolean = false
         get() {
             val findFirst = Sql::class.memberProperties.stream()

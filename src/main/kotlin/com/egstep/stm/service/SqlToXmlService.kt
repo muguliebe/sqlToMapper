@@ -1,25 +1,26 @@
 package com.egstep.stm.service
 
+import com.beust.klaxon.KlaxonException
 import com.egstep.stm.base.Base
 import com.egstep.stm.domain.Sql
 import com.egstep.stm.fwk.RunMode
 import com.egstep.stm.routine.Progress
 import com.egstep.stm.util.FileUtils
 import com.egstep.stm.util.SqlFileUtil
-import org.w3c.dom.Document
-import org.w3c.dom.Element
+import org.dom4j.*
+import org.dom4j.io.OutputFormat
+import org.dom4j.io.SAXReader
+import org.dom4j.io.XMLWriter
+import org.dom4j.tree.DefaultDocumentType
+import org.xml.sax.SAXParseException
 import java.io.File
-import java.io.StringWriter
-import java.nio.charset.Charset
-import java.nio.file.*
+import java.io.FileWriter
+import java.nio.file.FileSystems
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.*
-import javax.xml.parsers.DocumentBuilderFactory
-import javax.xml.transform.OutputKeys
-import javax.xml.transform.TransformerFactory
-import javax.xml.transform.dom.DOMSource
-import javax.xml.transform.stream.StreamResult
-import com.sun.org.apache.xml.internal.serialize.OutputFormat
-
+import kotlin.system.exitProcess
 
 
 object SqlToXmlService : Base() {
@@ -57,20 +58,35 @@ object SqlToXmlService : Base() {
 
         // parsing sql file format
         println("\nSql Parsing Start")
-        val sqls = sqlFiles.map { SqlFileUtil.parse(it) }
-                .filter { it.isValid }
-                .toMutableList()
+        val sqls = mutableListOf<Sql>()
+        for (file in sqlFiles) {
+            try {
+                val sql = SqlFileUtil.parse(file)
+                if (sql.isValid) {
+                    sqls.add(sql)
+                }
+            }catch (e : KlaxonException) {
+                println("Parsing Error: ${e.message} in ${file}")
+            }
+
+        }
         println("Sql Parsing End")
 
         // write xml
-        sqls.stream()
-                .map { getDocument(it) } // Sql -> Document
-                .forEach { writeXml(it) }
+        for (sql in sqls) {
+            val document = getDocument(sql)
+            if (document != null) {
+                writeXml(document, sql)
+            }
+        }
+
+        println("write in $pathTarget")
     }
 
     private fun displayComment() {
         Progress.displayStartLine()
-        println("Enter the Path where in sql files ex) /tmp/working/sql")
+        println("Enter the Path where in sql files" +
+                "ex) /tmp/working/sql or just enter for ${FileSystems.getDefault().getPath(".").toAbsolutePath()}")
         print(">")
     }
 
@@ -84,78 +100,69 @@ object SqlToXmlService : Base() {
         }
     }
 
-    private fun getDocument(sql: Sql): Pair<Document, Sql> {
+    private fun getDocument(sql: Sql): Document? {
         val path = Paths.get(pathTarget.toAbsolutePath().toString(), sql.mapperFileName + ".xml").toString()
         val xmlFile = File(path)
 
-        val documentBuilderFactory = DocumentBuilderFactory.newInstance()
-        documentBuilderFactory.isValidating = false
-
-        var document: Document = documentBuilderFactory.newDocumentBuilder().newDocument()
-
-        if (xmlFile.exists()) {
-            document = documentBuilderFactory.newDocumentBuilder().parse(xmlFile)
-            val nodeList = document.getElementsByTagName("mapper")
-            val nodeMapper = nodeList.item(0)
-            nodeMapper.appendChild(createQueryElement(document, sql))
-
-            // todo | validation namespace name is diff with input sql
-//            val namespace = nodeMapper.attributes.getNamedItem("namespace")?.nodeValue
-
+        val document = if (xmlFile.exists()) {
+            try {
+                SAXReader().read(xmlFile)
+            } catch (e: Exception) {
+                DocumentHelper.createDocument()
+            }
         } else {
-            val nodeMapper = document.createElement("mapper")
-            nodeMapper.setAttribute("namespace", sql.namespace)
-            document.appendChild(nodeMapper)
-
-            nodeMapper.appendChild(createQueryElement(document, sql))
+            DocumentHelper.createDocument()
         }
 
-        return Pair(document, sql)
+        if (document.rootElement == null) {
+            document.addElement("mapper").addAttribute("namespace", sql.namespace)
+        }
+
+        // docType
+        if (document.docType == null) {
+            val docType: DocumentType = DefaultDocumentType()
+            docType.elementName = "mapper"
+            docType.publicID = "-//mybatis.org//DTD Mapper 3.0//EN"
+            docType.systemID = "http://mybatis.org/dtd/mybatis-3-mapper.dtd"
+
+            document.docType = docType
+        }
+
+        // validation
+        val existElement = document.rootElement.elements()
+                .asSequence()
+                .filter { it.name.toLowerCase() == sql.queryType.toLowerCase() }
+                .filter { it.attribute("id")?.value?.toLowerCase() == sql.id.toLowerCase() }
+                .firstOrNull()
+
+        // add new Element
+        val newElement = if (existElement != null) {
+            existElement.text = ""
+            existElement
+        } else {
+            document.rootElement.addElement(sql.queryType)
+        }
+        newElement.addAttribute("id", sql.id)
+                .addAttribute(QName.get("space", Namespace.XML_NAMESPACE), "preserve")
+                .addText(sql.query)
+
+        if (sql.parameterType != null) newElement.addAttribute("parameterType", sql.parameterType)
+        if (sql.resultType != null) newElement.addAttribute("resultType", sql.resultType)
+
+        return document
     }
 
-    private fun createQueryElement(document: Document, sql: Sql): Element {
-        val addChild = document.createElement(sql.queryType)
-        addChild.setAttribute("id", sql.id)
-//        addChild.textContent = sql.query
-        addChild.appendChild(document.createTextNode(sql.query))
-
-        if (sql.parameterType != null) addChild.setAttribute("parameterType", sql.parameterType)
-        if (sql.resultType != null) addChild.setAttribute("resultType", sql.resultType)
-
-        return addChild
-    }
-
-    private fun writeXml(pair: Pair<Document, Sql>) {
-        val document = pair.first
-        val sql = pair.second
-
+    private fun writeXml(document: Document, sql: Sql) {
         val targetFilePath = Paths.get(pathTarget.toAbsolutePath().toString(), sql.mapperFileName + ".xml")
         if (targetFilePath.parent != null) {
             Files.createDirectories(targetFilePath.parent)
         }
 
-        val source = DOMSource(document)
-        val writer = Files.newBufferedWriter(
-                FileSystems.getDefault().getPath(targetFilePath.toAbsolutePath().toString()),
-                Charset.forName("UTF-8"),
-                StandardOpenOption.CREATE)
-//        val writer = StringWriter()
-
-        val result = StreamResult(writer)
-
-        val transformerFactory = TransformerFactory.newInstance()
-        val transformer = transformerFactory.newTransformer()
-        val domImpl = document.implementation
-        val doctype = domImpl.createDocumentType("doctype", "-//mybatis.org//DTD Mapper 3.0//EN", "http://mybatis.org/dtd/mybatis-3-mapper.dtd")
-        transformer.setOutputProperty(OutputKeys.DOCTYPE_PUBLIC, doctype.publicId)
-        transformer.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, doctype.systemId)
-        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no")
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes")
-        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4")
-
-        transformer.transform(source, result)
-
-        println("Xml Write: $targetFilePath")
+        val fileWriter = FileWriter(targetFilePath.toAbsolutePath().toString())
+        val format = OutputFormat.createPrettyPrint()
+        val writer = XMLWriter(fileWriter, format)
+        writer.write(document)
+        writer.close()
     }
-
 }
+

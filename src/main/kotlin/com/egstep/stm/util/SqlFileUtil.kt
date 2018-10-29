@@ -21,9 +21,10 @@ object SqlFileUtil {
                 }
                 sb.append(line)
             } else {
-                query.append(line)
+                query.appendln().append("    ").append(line)
             }
         }
+        query.appendln().append("  ")
 
         // =============================================================================
         // remove comment syntax

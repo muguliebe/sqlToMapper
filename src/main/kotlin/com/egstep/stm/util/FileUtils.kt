@@ -2,14 +2,6 @@ package com.egstep.stm.util
 
 import java.io.File
 import java.nio.file.Path
-import java.io.IOException
-import jdk.nashorn.internal.runtime.ScriptingFunctions.readLine
-import java.util.ArrayList
-import java.nio.charset.Charset
-import java.nio.file.FileSystems
-import java.nio.file.Files
-import java.io.BufferedReader
-
 
 
 class FileUtils {
