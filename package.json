@@ -7,9 +7,9 @@
   "main": "index.js",
   "preferGlobal": true,
   "repository": "",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "jdeploy": {
-    "jar": "build/libs/sqlToMapper.jar"
+    "jar": "build/libs/sqlToMapper-1.0.12.jar"
   },
   "dependencies": {
     "shelljs": "^0.7.5"
