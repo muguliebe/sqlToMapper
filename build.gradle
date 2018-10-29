@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'com.egstep'
-version '1.0.12'
+version '1.0.14'
 
 sourceCompatibility = 1.8
 

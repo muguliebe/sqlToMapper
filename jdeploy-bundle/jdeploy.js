@@ -65,7 +65,7 @@ function getJdeploySupportDir() {
 var fs = require('fs');
 var os = require('os');
 var path = require('path');
-var jarName = "sqlToMapper.jar";
+var jarName = "sqlToMapper-1.0.13.jar";
 var mainClass = "{{MAIN_CLASS}}";
 var classPath = "{{CLASSPATH}}";
 var port = "0";
@@ -150,15 +150,13 @@ programArgs.forEach(function(arg) {
 var child = exec(cmd, {async: true});
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('readable', () => {
-  var chunk = process.stdin.read();
-  if (chunk === null) {
-      
-      return;
+process.stdin.on('readable', function() {
+  var chunk = null;
+  while (null !== (chunk = process.stdin.read())) {
+    try {
+      child.stdin.write(chunk);
+    } catch(e){}
   }
-  try {
-    child.stdin.write(chunk);
-  } catch(e){}
 });
 child.on('close', function(code) {
     process.exit(code);
